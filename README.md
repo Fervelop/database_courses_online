@@ -4,11 +4,41 @@
 
 Este repositorio contiene un curso completo de **SQL Avanzado** adaptado al dominio de una **Plataforma de Cursos Online**. Cubre desde CTEs recursivas hasta funciones y procedimientos PL/pgSQL.
 
-**Semanas 13-18**: SQL Avanzado con casos reales de negocio
+**Semanas 06-18**: Desde fundamentos de SQL (agregaciones, JOINs, subqueries) hasta SQL Avanzado con casos reales de negocio (CTEs recursivas, window functions, transacciones y PL/pgSQL)
 
 ---
 
 ## 📋 Tabla de Contenidos
+
+### Semana 06: Funciones de Agregación
+- **Tema**: `COUNT()`, `SUM()`, `AVG()`, `MIN()`, `MAX()`, `GROUP BY`, `HAVING`
+- **Dominio**: Reportes y resúmenes de cursos, estudiantes e inscripciones
+- **Archivos**: `semana-06/query.sql`
+
+### Semana 07: NULL y Constraints (Restricciones)
+- **Tema**: `NOT NULL`, `UNIQUE`, `CHECK`, `FOREIGN KEY`, `COALESCE()`, `IS NULL / IS NOT NULL`
+- **Dominio**: Integridad de datos incompletos en cursos y estudiantes
+- **Archivos**: `semana-07/query.sql`
+
+### Semana 09: JOIN de Tablas
+- **Tema**: `INNER JOIN`, `LEFT JOIN`, agregación con JOINs, detección de registros huérfanos
+- **Dominio**: Relación entre cursos, categorías, estudiantes e inscripciones
+- **Archivos**: `semana-09/query.sql`
+
+### Semana 10: SELF JOIN y Datos Jerárquicos
+- **Tema**: `SELF JOIN`, `CROSS JOIN`, jerarquías de categorías (padre-hijo)
+- **Dominio**: Categorías anidadas de cursos (Programming > Web Development, etc.)
+- **Archivos**: `semana-10/query.sql`
+
+### Semana 11: Subqueries (Consultas Anidadas)
+- **Tema**: Subquery escalar en `WHERE`/`SELECT`, `NOT EXISTS`, tabla derivada en `FROM`, subqueries correlacionadas
+- **Dominio**: Análisis comparativo de cursos frente al promedio de su categoría
+- **Archivos**: `semana-11/query.sql`
+
+### Semana 12: CTEs y CASE WHEN
+- **Tema**: `WITH` (CTEs simples y encadenados), `CASE WHEN`, `COUNT` condicional
+- **Dominio**: Reportes analíticos de rendimiento por categoría y banda de precio
+- **Archivos**: `semana-12/query.sql`
 
 ### Semana 13: CTEs Recursivas
 - **Tema**: `WITH RECURSIVE` para jerarquías
@@ -69,7 +99,10 @@ docker-compose exec postgres psql -U postgres -d database_courses_online
 # Crear la base de datos
 createdb database_courses_online
 
-# Ejecutar un proyecto
+# Ejecutar un proyecto de las semanas 06-12 (fundamentos)
+psql -U usuario -d database_courses_online -f semana-06/query.sql
+
+# Ejecutar un proyecto de las semanas 13-18 (SQL avanzado)
 psql -U usuario -d database_courses_online -f semana-13/3-proyecto/starter/proyecto.sql
 ```
 
@@ -129,6 +162,12 @@ courses --< enrollments >-- students
 
 | Semana | Concepto Principal | Funciones SQL | CTEs/Vistas |
 |--------|-------------------|---------------|------------|
+| 06 | Agregaciones | COUNT, SUM, AVG, MIN, MAX | GROUP BY / HAVING |
+| 07 | Integridad de datos | COALESCE, IS NULL | NOT NULL, UNIQUE, CHECK, FOREIGN KEY |
+| 09 | Combinación de tablas | — | INNER JOIN, LEFT JOIN |
+| 10 | Jerarquías simples | COUNT | SELF JOIN, CROSS JOIN |
+| 11 | Consultas anidadas | — | Subqueries escalares y correlacionadas, NOT EXISTS |
+| 12 | Reportes analíticos | CASE WHEN, COUNT condicional | WITH (CTEs simples y encadenados) |
 | 13 | Jerarquías | REPEAT, ARRAY | WITH RECURSIVE |
 | 14 | Rankings | ROW_NUMBER, RANK, DENSE_RANK | CTE de ranking |
 | 15 | Tendencias | LAG, LEAD, FIRST_VALUE, LAST_VALUE | CREATE VIEW |
@@ -139,6 +178,75 @@ courses --< enrollments >-- students
 ---
 
 ## 💡 Ejemplos de Consultas
+
+### Funciones de Agregación (Semana 06)
+```sql
+SELECT
+    c.difficulty_level,
+    COUNT(*) AS total_courses,
+    AVG(c.price) AS avg_price
+FROM courses c
+GROUP BY c.difficulty_level
+HAVING COUNT(*) > 2;
+```
+
+### Manejo de NULL y Constraints (Semana 07)
+```sql
+SELECT
+    name,
+    COALESCE(phone, 'Sin teléfono registrado') AS phone
+FROM students
+WHERE phone IS NULL;
+```
+
+### JOIN de Tablas (Semana 09)
+```sql
+SELECT
+    c.title,
+    cat.name AS category,
+    COUNT(e.id) AS total_enrollments
+FROM courses c
+INNER JOIN categories cat ON c.category_id = cat.id
+LEFT JOIN enrollments e ON e.course_id = c.id
+GROUP BY c.title, cat.name;
+```
+
+### SELF JOIN Jerárquico (Semana 10)
+```sql
+SELECT
+    child.name AS subcategory,
+    parent.name AS parent_category
+FROM categories child
+JOIN categories parent ON child.parent_id = parent.id;
+```
+
+### Subqueries (Semana 11)
+```sql
+SELECT title, price
+FROM courses c
+WHERE price > (
+    SELECT AVG(price) FROM courses
+    WHERE category_id = c.category_id
+);
+```
+
+### CTE y CASE WHEN (Semana 12)
+```sql
+WITH course_activity AS (
+    SELECT course_id, COUNT(*) AS total_enrollments
+    FROM enrollments
+    GROUP BY course_id
+)
+SELECT
+    c.title,
+    CASE
+        WHEN ca.total_enrollments > 10 THEN 'Alta demanda'
+        WHEN ca.total_enrollments > 3 THEN 'Demanda media'
+        ELSE 'Baja demanda'
+    END AS popularidad
+FROM courses c
+JOIN course_activity ca ON ca.course_id = c.id;
+```
 
 ### Jerarquía de Cursos (Semana 13)
 ```sql
@@ -227,15 +335,7 @@ docker-compose restart postgres
 
 ---
 
-## 📝 Licencia
 
-Este proyecto está bajo licencia MIT. Úsalo libremente en fines educativos.
-
----
-
-## 👨‍💻 Autor
-
-Curso adaptado al dominio de Plataforma de Cursos Online con el bootcamp de SQL de `ergrato-dev/bc-sql`.
 
 **Fecha**: Julio 2026  
 **Versión**: 1.0
